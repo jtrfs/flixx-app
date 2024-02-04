@@ -7,6 +7,7 @@ const global = {
   popularMovies: document.getElementById('popular-movies'),
   popularShows: document.getElementById('popular-shows'),
   movieDetails: document.getElementById('movie-details'),
+  showDetails: document.getElementById('show-details'),
 };
 
 // fetch the popular movies
@@ -129,6 +130,73 @@ const displayMovieDetails = async () => {
   global.movieDetails.appendChild(divBottom);
 };
 
+//fetch show details: https://api.themoviedb.org/3/movie/{movie_id}
+const displayShowDetails = async () => {
+  const pageSearchParams = new URL(window.location).searchParams;
+  const id = pageSearchParams.get('id');
+  const show = await fetchApiData(`tv/${id}`);
+  const {
+    genres,
+    homepage,
+    overview,
+    poster_path: poster,
+    production_companies: companies,
+    first_air_date: airDate,
+    status,
+    name,
+    vote_average: rating,
+    backdrop_path: backdrop,
+    number_of_episodes: episodes,
+    last_episode_to_air: {name: lastEpisode},
+  } = show;
+  console.log(show);
+
+  // Overlay for background image
+  displayBackgroundImage('show', backdrop);
+
+  const divTop = document.createElement('div');
+  const divBottom = document.createElement('div');
+  divTop.classList.add('details-top');
+  divBottom.classList.add('details-bottom');
+  divTop.innerHTML = `
+    <div>
+      ${
+        poster
+          ? `<img src="${global.posterUrl}${poster}" alt="${name}" class="card-img-top">`
+          : `<img src="../images/no-image.jpg" class="card-img-top" alt="${name}" />`
+      }
+    </div>
+    <div>
+      <h2>${name}</h2>
+      <p>
+        <i class="fas fa-star text-primary"></i>${rating.toFixed(1)} / 10
+      </p>
+      <p class="text-muted">Release Date: ${airDate}</p>
+      <p>${overview}</p>
+      <h5>Genres</h5>
+      <ul class="list-group">
+        ${genres.map(genre => `<li>${genre.name}</li>`).join('')}
+      </ul>
+      <a href="${homepage}" target="_blank" class="btn">Visit Movie Homepage</a>
+    </div>
+  `;
+  divBottom.innerHTML = `
+    <h2>Movie Info</h2>
+    <ul>
+      <li><span class="text-secondary">Number of Episodes:</span> ${episodes}</li>
+      <li><span class="text-secondary">Last Episode to Air:</span> ${lastEpisode}</li>
+      <li><span class="text-secondary">Status:</span> ${status}</li>
+    </ul>
+    <h4>Production Companies</h4>
+    <div class="list-group">${companies
+      .map(company => `<span>${company.name}</span>`)
+      .join(', ')}</div>
+  `;
+
+  global.showDetails.appendChild(divTop);
+  global.showDetails.appendChild(divBottom);
+};
+
 // display backdrop on details pages
 const displayBackgroundImage = (type, backdrop) => {
   const overlayDiv = document.createElement('div');
@@ -195,6 +263,7 @@ const init = () => {
       break;
     case '/tv-details.html':
       console.log('TV Details');
+      displayShowDetails();
       break;
     case '/search.html':
       console.log('Search');
