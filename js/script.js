@@ -8,6 +8,12 @@ const global = {
   popularShows: document.getElementById('popular-shows'),
   movieDetails: document.getElementById('movie-details'),
   showDetails: document.getElementById('show-details'),
+  search: {
+    term: '',
+    type: '',
+    page: 1,
+    totalPages: 1,
+  },
 };
 
 // fetch the popular movies
@@ -219,11 +225,110 @@ const displayBackgroundImage = (type, backdrop) => {
   }
 };
 
+// display SLIDER now playing movies on home page
+const displaySwiper = async () => {
+  const {results} = await fetchApiData('movie/now_playing');
+  results.forEach(movie => {
+    console.log(movie.title);
+    const div = document.createElement('div');
+    div.classList.add('swiper-slide');
+    div.innerHTML = `
+      <a href="movie-details.html?id=${movie.id}">
+        <img src="${global.posterUrl}${movie.poster_path}" alt="${movie.title}" />
+      </a>
+      <h4 class="swiper-rating">
+        <i class="fas fa-star text-secondary"></i> ${movie.vote_average.toFixed(1)} / 10
+      </h4>
+    `;
+    document.querySelector('.swiper-wrapper').appendChild(div);
+    initSwiper();
+  });
+};
+
+const initSwiper = () => {
+  const swiper = new Swiper('.swiper', {
+    slidesPerView: 1,
+    spaceBetween: 40,
+    freeMode: true,
+    loop: true,
+    autoplay: {
+      delay: 2000,
+      disableOnInteraction: false,
+    },
+    breakpoints: {
+      500: {slidesPerView: 2, spaceBetween: 20},
+      700: {slidesPerView: 3, spaceBetween: 20},
+      1200: {slidesPerView: 4, spaceBetween: 20},
+    },
+  });
+};
+
+// searching for a movie/show
+const search = async () => {
+  // getting the url data/query string
+  const searchParams = new URL(window.location).searchParams;
+  global.search.type = searchParams.get('type');
+  global.search.term = searchParams.get('search-term');
+  console.log(global.search.type);
+  console.log(global.search.term);
+  // checking if the search term is not null or empty
+  if (global.search.term !== null && global.search.term !== '') {
+    // fetching the data from TMDB API
+    const {results, total_pages, page} = await searchApiData();
+    if (results.length === 0) {
+      showAlert('No Results Found');
+      return;
+    }
+    displaySearchResults(results);
+    document.querySelector('#search-term').value = '';
+  } else {
+    // displaying error message if search term is empty
+    showAlert('Please enter a search term.');
+  }
+};
+
+const displaySearchResults = results => {
+  results.forEach(result => {
+    console.log(result);
+    const poster = result.poster_path;
+    const title = result.title || result.name;
+    const date = result.release_date || result.first_air_date;
+    const div = document.createElement('div');
+    div.classList.add('card');
+    div.innerHTML = `
+    <a href="${global.search.type}-details.html?id=${result.id}">
+      ${
+        result.poster_path
+          ? `<img src="${global.posterUrl}${poster}" alt="${title}" class="card-img-top">`
+          : `<img src="../images/no-image.jpg" class="card-img-top" alt="${global.search.type} Title" />`
+      }
+    </a>
+    <div class="card-body">
+      <h5 class="card-title">${title}</h5>
+      <p class="card-text">
+        <small class="text-muted">Release: ${date}</small>
+      </p>
+    </div>`;
+    document.querySelector('#search-results').appendChild(div);
+  });
+};
+
 // fetch the data from TMDB API
 const fetchApiData = async endpoint => {
   global.spinner.classList.add('show');
   const response = await fetch(
     `${global.baseUrl}/${endpoint}?api_key=${global.apiKey}&language=en-US`,
+  );
+  const data = await response.json();
+  global.spinner.classList.remove('show');
+  return data;
+};
+
+// make request to search
+const searchApiData = async () => {
+  global.spinner.classList.add('show');
+  const response = await fetch(
+    `${global.baseUrl}/search/${global.search.type}?api_key=${global.apiKey}&language=en-US&query=${global.search.term}`,
   );
   const data = await response.json();
   global.spinner.classList.remove('show');
@@ -241,9 +346,20 @@ const highlightActiveLink = () => {
 };
 
 // add commas to number, using regex
-function numberWithCommas(x) {
-  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
+const numberWithCommas = number => {
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+};
+
+// show alert
+const showAlert = (message, className = 'error') => {
+  const alertEl = document.createElement('div');
+  alertEl.className = `alert alert-${className}`;
+  alertEl.appendChild(document.createTextNode(message));
+  document.querySelector('#alert').appendChild(alertEl);
+  setTimeout(() => {
+    alertEl.remove();
+  }, 3000);
+};
 
 // initialize the app
 const init = () => {
@@ -251,6 +367,7 @@ const init = () => {
     case '/':
     case '/index.html':
       console.log('Home');
+      displaySwiper();
       displayPopularMovies();
       break;
     case '/shows.html':
@@ -267,6 +384,7 @@ const init = () => {
       break;
     case '/search.html':
       console.log('Search');
+      search();
       break;
   }
 

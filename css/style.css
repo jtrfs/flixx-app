@@ -327,8 +327,15 @@ section h2 {
 }
 
 /* Alert */
+#alert {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .alert {
-  background: red;
+  position: absolute;
+  top: 60px;
   padding: 10px 20px;
   margin-bottom: 20px;
   border-radius: 5px;
