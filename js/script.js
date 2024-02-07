@@ -13,6 +13,7 @@ const global = {
     type: '',
     page: 1,
     totalPages: 1,
+    totalResults: 0,
   },
 };
 
@@ -274,7 +275,10 @@ const search = async () => {
   // checking if the search term is not null or empty
   if (global.search.term !== null && global.search.term !== '') {
     // fetching the data from TMDB API
-    const {results, total_pages, page} = await searchApiData();
+    const {results, total_pages, page, total_results} = await searchApiData();
+    global.search.totalPages = total_pages;
+    global.search.totalResults = total_results;
+    global.search.page = page;
     if (results.length === 0) {
       showAlert('No Results Found');
       return;
@@ -309,6 +313,9 @@ const displaySearchResults = results => {
         <small class="text-muted">Release: ${date}</small>
       </p>
     </div>`;
+    document.querySelector('#search-results-heading').innerHTML = `
+      <h2>${results.length} of ${global.search.totalResults} results for ${global.search.term}</h2>
+    `;
     document.querySelector('#search-results').appendChild(div);
   });
 };
