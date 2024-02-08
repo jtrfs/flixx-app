@@ -292,6 +292,10 @@ const search = async () => {
 };
 
 const displaySearchResults = results => {
+  document.querySelector('#search-results').innerHTML = '';
+  document.querySelector('#search-results-heading').innerHTML = '';
+  document.querySelector('#pagination').innerHTML = '';
+
   results.forEach(result => {
     console.log(result);
     const poster = result.poster_path;
@@ -318,6 +322,41 @@ const displaySearchResults = results => {
     `;
     document.querySelector('#search-results').appendChild(div);
   });
+  displayPagination();
+};
+
+// create and display pagination for search results
+const displayPagination = () => {
+  const div = document.createElement('div');
+  div.classList.add('pagination');
+  div.innerHTML = `
+  <button class="btn btn-primary" id="prev">Prev</button>
+  <button class="btn btn-primary" id="next">Next</button>
+  <div class="page-counter">Page ${global.search.page} of ${global.search.totalPages}</div>
+  `;
+  document.querySelector('#pagination').appendChild(div);
+  const prevBtn = document.querySelector('#prev');
+  const nextBtn = document.querySelector('#next');
+  // disable the prev/next buttons if on the first/last page
+  if (global.search.page === 1) {
+    prevBtn.disabled = true;
+  }
+  if (global.search.page === global.search.totalPages) {
+    nextBtn.disabled = true;
+  }
+  // add event listeners to the prev and next buttons
+  prevBtn.addEventListener('click', async () => {
+    global.search.page--;
+    console.log('clicked prevBtn');
+    const {results} = await searchApiData();
+    displaySearchResults(results);
+  });
+  nextBtn.addEventListener('click', async () => {
+    global.search.page++;
+    const {results} = await searchApiData();
+    console.log('clicked nextBtn', results);
+    displaySearchResults(results);
+  });
 };
 
 // fetch the data from TMDB API
@@ -335,7 +374,7 @@ const fetchApiData = async endpoint => {
 const searchApiData = async () => {
   global.spinner.classList.add('show');
   const response = await fetch(
-    `${global.baseUrl}/search/${global.search.type}?api_key=${global.apiKey}&language=en-US&query=${global.search.term}`,
+    `${global.baseUrl}/search/${global.search.type}?api_key=${global.apiKey}&language=en-US&query=${global.search.term}&page=${global.search.page}`,
   );
   const data = await response.json();
   global.spinner.classList.remove('show');
